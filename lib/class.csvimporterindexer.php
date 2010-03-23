@@ -38,6 +38,7 @@
 		 */
 		public function index($page, $errors) {
 			$page->setPageType('table');
+			$page->addStylesheetToHead(URL . '/extensions/csvimporter/assets/csvimporter.css', 'screen', 100);
 			$page->setTitle(__('Symphony') . ' &ndash; ' . __('CSV Importers'));
 			// make sure the index will allow the upload of files.
 			$page->Form->setAttribute('enctype', 'multipart/form-data');

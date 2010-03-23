@@ -1,0 +1,3 @@
+table.selectable input[type=file] {
+	display: block;
+}

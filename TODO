@@ -1,4 +1,3 @@
-+ Fix the css so that the file input is shown on the index page
 + Pagination of the index page
 + Style the Mappings column of the index page to take up less space. Something like: Column -> Field, Column -> Field, Column -> Field ...
 + Status alerts on both the index page and the editor page are broken
