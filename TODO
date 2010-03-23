@@ -6,3 +6,4 @@
 + Rather than use an array of known structure to pass an importer around, an object would be better. When saving an importer it would create a subclass of the importer class that simply calls the constructor with the saved values. Creating an importer from the form data would simply involve calling the importer class constructor with the correct parameters.
 + Add type hints for each object and array passed to a function
 + Add type checks at the top of each function that accepts a primitive type (is_bool(), is_string() etc)
++ Field names are incorrect in the indexer
