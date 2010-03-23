@@ -322,7 +322,7 @@
 				$field = $fieldManager->fetch($mapping['field'], $importer['section']['id']);
 				$headers = $this->headers($importer, $importer['header']);
 				$column = $headers[$mapping['column']];
-				$tableBody[] = Widget::TableRow(array(Widget::TableData($field->name()), Widget::TableData($column)));
+				$tableBody[] = Widget::TableRow(array(Widget::TableData($field->get('label')), Widget::TableData($column)));
 			}
 			// create a table to display the mappings
 			return Widget::TableData(Widget::Table(
