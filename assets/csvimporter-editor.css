@@ -1,0 +1,6 @@
+/*
+ * Don't display the index in ordered lists.
+ */
+ol {
+	list-style-type: none;
+}

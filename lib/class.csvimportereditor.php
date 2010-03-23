@@ -26,7 +26,8 @@
 			// because we are uploading a file from the users machine, we must
 			// ensure that it can be accepted by the form.
 			$page->Form->setAttribute('enctype', 'multipart/form-data');
-			$page->addStylesheetToHead(URL . '/extensions/csvimporter/assets/csvimporter.css', 'screen', 100);
+			$page->addStylesheetToHead(URL . '/extensions/csvimporter/assets/csvimporter-editor.css', 'screen', 100);
+			$page->addStylesheetToHead(URL . '/symphony/assets/tables.css', 'screen', 100);
 			$page->addScriptToHead(URL . '/extensions/csvimporter/assets/csvimporter.js', 101);
 
 			$page->setTitle(__('Symphony') . ' &ndash; ' . __('New CSV Importer'));
@@ -61,7 +62,8 @@
 			// because we are uploading a file from the users machine, we must
 			// ensure that it can be accepted by the form.
 			$page->Form->setAttribute('enctype', 'multipart/form-data');
-			$page->addStylesheetToHead(URL . '/extensions/csvimporter/assets/csvimporter.css', 'screen', 100);
+			$page->addStylesheetToHead(URL . '/extensions/csvimporter/assets/csvimporter-editor.css', 'screen', 100);
+			$page->addStylesheetToHead(URL . '/symphony/assets/tables.css', 'screen', 100);
 			$page->addScriptToHead(URL . '/extensions/csvimporter/assets/csvimporter.js', 101);
 
 			$page->setTitle(__('Symphony') . ' &ndash; ' . __('Edit CSV Importer'));
