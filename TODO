@@ -1,0 +1,9 @@
++ Fix the css so that the file input is shown on the index page
++ Pagination of the index page
++ Style the Mappings column of the index page to take up less space. Something like: Column -> Field, Column -> Field, Column -> Field ...
++ Status alerts on both the index page and the editor page are broken
++ The mappings duplicator requires styling on the new and edit pages
++ The example table of the new and edit pages requires styling
++ Rather than use an array of known structure to pass an importer around, an object would be better. When saving an importer it would create a subclass of the importer class that simply calls the constructor with the saved values. Creating an importer from the form data would simply involve calling the importer class constructor with the correct parameters.
++ Add type hints for each object and array passed to a function
++ Add type checks at the top of each function that accepts a primitive type (is_bool(), is_string() etc)
