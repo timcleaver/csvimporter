@@ -38,7 +38,7 @@
 		 */
 		public function index($page, $errors) {
 			$page->setPageType('table');
-			$page->addStylesheetToHead(URL . '/extensions/csvimporter/assets/csvimporter.css', 'screen', 100);
+			$page->addStylesheetToHead(URL . '/extensions/csvimporter/assets/csvimporter-index.css', 'screen', 100);
 			$page->setTitle(__('Symphony') . ' &ndash; ' . __('CSV Importers'));
 			// make sure the index will allow the upload of files.
 			$page->Form->setAttribute('enctype', 'multipart/form-data');
@@ -319,6 +319,7 @@
 			$fieldManager = new FieldManager($this);
 			// use a definition list to map columns to fields.
 			$definitions = new XMLElement('dl');
+			$definitions->setAttribute('class', 'csv-mappings');
 			foreach (array_slice($importer['mappings'], 0, self::NUM_MAPPINGS) as $mapping) {
 				$field = $fieldManager->fetch($mapping['field'], $importer['section']['id']);
 				$headers = $this->headers($importer, $importer['header']);
@@ -328,7 +329,7 @@
 			// if there are more than NUM_MAPPINGS elements mapped then add a truncated class to
 			// the definition list
 			if (count($importer['mappings']) > self::NUM_MAPPINGS) {
-				$definitions->setAttribute('class', 'truncated');
+				$definitions->setAttribute('class', 'csv-mappings truncated');
 			}
 			return Widget::TableData($definitions);
 		}

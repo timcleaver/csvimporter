@@ -9,7 +9,7 @@ table.selectable input[type=file] {
 /*
  * Place all the definition list elements on the same line.
  */
-dl > * {
+dl.csv-mappings > * {
 	float: left;
 	display: inline-block;
 }
@@ -18,7 +18,7 @@ dl > * {
  * Add arrows (and margins) after the terms being defined in the definition
  * list.
  */
-dt:after {
+dl.csv-mappings > dt:after {
 	content: '\2192';
 	margin: 0 1ex;
 }
@@ -27,7 +27,7 @@ dt:after {
  * Add commas after the definitions within the definition list aside from the
  * last one.
 */
-dd:not(:last-of-type):after {
+dl.csv-mappings > dd:not(:last-of-type):after {
 	content: ', ';
 	margin-right: 1ex;
 }
@@ -35,14 +35,14 @@ dd:not(:last-of-type):after {
 /*
  * Add the elipsis if the mappings is truncated.
  */
-dl.truncated:after {
+dl.csv-mappings.truncated:after {
 	content: '...';
 }
 
 /*
  * Add a trailing comma to the last definition if the list is truncated.
  */
-dl.truncated > dd:after {
+dl.csv-mappings.truncated > dd:after {
 	content: ',';
 	margin-right: 1ex;
 }
