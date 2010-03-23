@@ -317,20 +317,20 @@
 		 */
 		protected function tableDataMappings($importer) {
 			$fieldManager = new FieldManager($this);
-			$tableBody = array();
+			// use a definition list to map columns to fields.
+			$definitions = new XMLElement('dl');
 			foreach (array_slice($importer['mappings'], 0, self::NUM_MAPPINGS) as $mapping) {
 				$field = $fieldManager->fetch($mapping['field'], $importer['section']['id']);
 				$headers = $this->headers($importer, $importer['header']);
-				$column = $headers[$mapping['column']];
-				$tableBody[] = Widget::TableRow(array(Widget::TableData($field->get('label')), Widget::TableData($column)));
+				$definitions->appendChild(new XMLElement('dt', $headers[$mapping['column']]));
+				$definitions->appendChild(new XMLElement('dd', $field->get('label')));
 			}
-			// create a table to display the mappings
-			return Widget::TableData(Widget::Table(
-				Widget::TableHead(array(array('Field'), array('Column'))),
-				null,
-				Widget::TableBody($tableBody),
-				'csv-mappings'
-			));
+			// if there are more than NUM_MAPPINGS elements mapped then add a truncated class to
+			// the definition list
+			if (count($importer['mappings']) > self::NUM_MAPPINGS) {
+				$definitions->setAttribute('class', 'truncated');
+			}
+			return Widget::TableData($definitions);
 		}
 
 		/**

@@ -1,5 +1,4 @@
 + Pagination of the index page
-+ Style the Mappings column of the index page to take up less space. Something like: Column -> Field, Column -> Field, Column -> Field ...
 + Status alerts on both the index page and the editor page are broken
 + The mappings duplicator requires styling on the new and edit pages
 + The example table of the new and edit pages requires styling
