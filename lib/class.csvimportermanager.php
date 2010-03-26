@@ -212,7 +212,7 @@
 			$extensionManager = new ExtensionManager($this);
 			$version = $extensionManager->fetchInstalledVersion('csvimporter');
 			return sprintf($template,
-				str_replace(' ', '', ucwords($importer['handle'])),							// handle
+				str_replace(' ', '', ucwords($importer['handle'])),							// classname
 				var_export($importer['about']['name'], true),								// name
 				var_export($importer['about']['author']['name'], true),						// author
 				var_export($importer['about']['author']['website'], true),					// website
