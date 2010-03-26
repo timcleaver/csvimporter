@@ -44,13 +44,14 @@
 		 * This is the callback symphony uses to view/construct new importers.
 		 */
 		public function __viewNew() {
-			$csvImporterEditor = new CsvImporterEditor();
+			$importer = $this->fromForm();
+			$csvImporterEditor = new CsvImporterEditor($importer);
 			if (isset($_POST['action']['save'])) {
 				$context = $this->Context();
-				$csvImporterEditor->edit($this, $this->fromForm(), $context[2], $_POST['errors']);
+				$csvImporterEditor->edit($this, $context[2], $_POST['errors']);
 				return;
 			}
-			$csvImporterEditor->create($this, $this->fromForm());
+			$csvImporterEditor->create($this, $importer);
 		}
 
 		/**
@@ -67,10 +68,10 @@
 			}
 			$csvImporterManager = new CsvImporterManager($this->Parent);
 			$context = $this->Context();
-			$importer = $csvImporterManager->create($context[1])->data();
+			$importer = $csvImporterManager->create(Lang::createHandle($context[1]))->data();
 
-			$csvImporterEditor = new CsvImporterEditor();
-			$csvImporterEditor->edit($this, $importer, $context[2], $_POST['errors']);
+			$csvImporterEditor = new CsvImporterEditor($importer);
+			$csvImporterEditor->edit($this, $context[2], $_POST['errors']);
 		}
 
 		/**

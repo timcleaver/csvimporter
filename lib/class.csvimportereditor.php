@@ -14,14 +14,34 @@
 		const EXAMPLE_LENGTH = 3;
 
 		/**
+		 * The importer on which the editor is operating.
+		 */
+		private $importer;
+
+		/**
+		 * The cache of the headers extracted from the file.
+		 */
+		private $headers;
+
+		/**
+		 * Construct an editor for a particular importer.
+		 *
+		 * @param array $importer
+		 *	the current importer structure.
+		 */
+		public function __construct(array $importer) {
+			$this->importer = $importer;
+			// we need to cache both the versions with and without headers
+			$this->headers = array(true => $this->headers(true), false => $this->headers(false));
+		}
+
+		/**
 		 * Construct the view to edit a new importer.
 		 *
 		 * @param AdministrationPage $page
 		 *	the page onto which the editor is to be rendered.
-		 * @param array $importer
-		 *	the current importer structure.
 		 */
-		public function create($page, $importer) {
+		public function create($page) {
 			$page->setPageType('form');
 			// because we are uploading a file from the users machine, we must
 			// ensure that it can be accepted by the form.
@@ -33,15 +53,15 @@
 			$page->setTitle(__('Symphony') . ' &ndash; ' . __('New CSV Importer'));
 			$page->appendSubheading(__('New CSV Importer'));
 			
-			$page->Form->appendChild($this->essentials($importer));
-			$page->Form->appendChild($this->source($importer));
+			$page->Form->appendChild($this->essentials());
+			$page->Form->appendChild($this->source());
 			// if a file has been specified then the user can select a
 			// section
-			if (isset($importer['source']['name'])) {
-				$page->Form->appendChild($this->destination($importer));
-				$page->Form->appendChild($this->mappings($importer));
+			if (isset($this->importer['source']['name'])) {
+				$page->Form->appendChild($this->destination());
+				$page->Form->appendChild($this->mappings());
 			}
-			$page->Form->appendChild($this->footer($importer, false));
+			$page->Form->appendChild($this->footer(false));
 		}
 
 		/**
@@ -49,15 +69,13 @@
 		 *
 		 * @param AdministrationPage $page
 		 *	the page onto which the editor is to be rendered.
-		 * @param array $importer
-		 *	the current importer structure.
 		 * @param string status (optional)
 		 *	an optional status which indicates the previous action taken.
 		 * @param array $errors (optional)
 		 *	an optional set of errors that must be included on the edit page.
 		 *	this defaults to null.
 		 */
-		public function edit($page, $importer, $status, $errors=null) {
+		public function edit($page, $status, $errors=null) {
 			$page->setPageType('form');
 			// because we are uploading a file from the users machine, we must
 			// ensure that it can be accepted by the form.
@@ -69,48 +87,46 @@
 			$page->setTitle(__('Symphony') . ' &ndash; ' . __('Edit CSV Importer'));
 			$page->appendSubheading(__('Edit CSV Importer'));
 
-			$this->valid($importer, $errors);
+			$this->valid($errors);
 			$this->status($page, $status, $errors);
-			$page->Form->appendChild($this->essentials($importer, $errors));
-			$page->Form->appendChild($this->source($importer, $errors));
+			$page->Form->appendChild($this->essentials($errors));
+			$page->Form->appendChild($this->source($errors));
 			// if a file has been specified then the user can select a
 			// section
-			if (isset($importer['source']['name'])) {
-				$page->Form->appendChild($this->destination($importer));
-				$page->Form->appendChild($this->mappings($importer));
+			if (isset($this->importer['source']['name'])) {
+				$page->Form->appendChild($this->destination());
+				$page->Form->appendChild($this->mappings());
 			}
-			$page->Form->appendChild($this->footer($importer, true));
+			$page->Form->appendChild($this->footer(true));
 		}
 
 		/**
 		 * Validate the importer data.
 		 *
-		 * @param array $importer
-		 *	the importer to validate.
 		 * @param array $errors (optional)
 		 *	the optional error array to populate with validation errors.
 		 * @return boolean
 		 *	true if the post data validated successfully, false otherwise.
 		 */
-		protected function valid($importer, &$errors=null) {
+		protected function valid(&$errors=null) {
 			// name
-			if (!isset($importer['about']['name']) or empty($importer['about']['name'])) {
+			if (!isset($this->importer['about']['name']) or empty($this->importer['about']['name'])) {
 				$errors['name'] = 'This importer must have a name.';
 			}
 			// file info
-			if (empty($importer['source'])) {
+			if (empty($this->importer['source'])) {
 				$errors['source'][] = 'A saved importer must have file information';
 			}
-			if (!isset($importer['source']['name'])) {
+			if (!isset($this->importer['source']['name'])) {
 				$errors['source'][] = 'A saved importer must have a viewable filename';
 			}
-			if (!isset($importer['source']['path'])) {
+			if (!isset($this->importer['source']['path'])) {
 				$errors['source'][] = 'A saved importer must have a valid file path';
 			}
-			if (!file_exists($importer['source']['path'])) {
+			if (!file_exists($this->importer['source']['path'])) {
 				$errors['source'][] = 'The file path specified does not exist';
 			}
-			if (!is_readable($importer['source']['path'])) {
+			if (!is_readable($this->importer['source']['path'])) {
 				$errors['source'][] = 'The file path specified canno be read';
 			}
 			// if there are no errors then the post data is valid.
@@ -149,33 +165,31 @@
 		 * Construct the html representation of the essential elements of the
 		 * importer.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the essential elements
 		 * @param array $errors (optional)
 		 *	an optional error array as constructed by validating the _POST data.
 		 * @return Widget
 		 *	the html representation of the essential elements.
 		 */
-		protected function essentials($importer, $errors=null) {
+		protected function essentials($errors=null) {
 			$fieldset = new XMLElement('fieldset');
 			$fieldset->setAttribute('class', 'settings');
 			$fieldset->appendChild(new XMLElement('legend', __('Essentials')));
 			
 			$group = new XMLElement('div');
 			$group->setAttribute('class', 'group');
-			$group->appendChild($this->name($importer, $errors));
-			$group->appendChild($this->description($importer, $errors));
+			$group->appendChild($this->name($errors));
+			$group->appendChild($this->description($errors));
 			// add the author info if there is any
-			if (isset($importer['about']['author'])) {
-				$group->appendChild($this->author($importer));
+			if (isset($this->importer['about']['author'])) {
+				$group->appendChild($this->author());
 			}
 			// add the file information is there is any
-			if (isset($importer['about']['file'])) {
-				$group->appendChild($this->file($importer));
+			if (isset($this->importer['about']['file'])) {
+				$group->appendChild($this->file());
 			}
 			// add the creation date if there is any
-			if (isset($importer['about']['created'])) {
-				$group->appendChild($this->created($importer));
+			if (isset($this->importer['about']['created'])) {
+				$group->appendChild($this->created());
 			}
 			$fieldset->appendChild($group);
 			return $fieldset;
@@ -184,16 +198,14 @@
 		/**
 		 * Construct the html input for the name of this csv importer.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the essential elements
 		 * @param array $errors (optional)
 		 *	an optional error array as constructed by validating the _POST data.
 		 * @return Widget
 		 *	the html representation of the essential elements.
 		 */
-		protected function name($importer, $errors=null) {
+		protected function name($errors=null) {
 			$name = Widget::Label(__('Name'));
-			$name->appendChild(Widget::Input('fields[about][name]', $importer['about']['name']));
+			$name->appendChild(Widget::Input('fields[about][name]', $this->importer['about']['name']));
 			
 			if (isset($errors['name'])) {
 				$name = Widget::wrapFormElementWithError($name, $errors['name']);
@@ -204,16 +216,14 @@
 		/**
 		 * Construct the html input for the description of this csv importer.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the essential elements
 		 * @param array $errors (optional)
 		 *	an optional error array as constructed by validating the _POST data.
 		 * @return Widget
 		 *	the html representation of the essential elements.
 		 */
-		protected function description($importer, $errors=null) {
+		protected function description($errors=null) {
 			$description = Widget::Label(__('Description <i>Optional</i>'));
-			$description->appendChild(Widget::Input('fields[about][description]', $importer['about']['description']));
+			$description->appendChild(Widget::Input('fields[about][description]', $this->importer['about']['description']));
 			
 			if (isset($errors['description'])) {
 				$description = Widget::wrapFormElementWithError($description, $errors['description']);
@@ -225,16 +235,14 @@
 		 * Construct the hidden author details so that when a form is submitted
 		 * the author data is saved also.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the essential elements
 		 * @return Widget
 		 *	the html representation of the essential elements.
 		 */
-		protected function author($importer) {
+		protected function author() {
 			$group = new XMLElement('p');
-			$group->appendChild(Widget::Input('fields[about][author][name]', $importer['about']['author']['name'], 'hidden'));
-			$group->appendChild(Widget::Input('fields[about][author][website]', $importer['about']['author']['website'], 'hidden'));
-			$group->appendChild(Widget::Input('fields[about][author][email]', $importer['about']['author']['email'], 'hidden'));
+			$group->appendChild(Widget::Input('fields[about][author][name]', $this->importer['about']['author']['name'], 'hidden'));
+			$group->appendChild(Widget::Input('fields[about][author][website]', $this->importer['about']['author']['website'], 'hidden'));
+			$group->appendChild(Widget::Input('fields[about][author][email]', $this->importer['about']['author']['email'], 'hidden'));
 			return $group;
 		}
 
@@ -242,14 +250,12 @@
 		 * Construct the hidden file details so that when a form is submitted
 		 * the file data is saved also.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the essential elements
 		 * @return Widget
 		 *	the html representation of the essential elements.
 		 */
-		protected function file($importer) {
+		protected function file() {
 			$group = new XMLElement('p');
-			$group->appendChild(Widget::Input('fields[about][file]', $importer['about']['file'], 'hidden'));
+			$group->appendChild(Widget::Input('fields[about][file]', $this->importer['about']['file'], 'hidden'));
 			return $group;
 		}
 
@@ -257,41 +263,37 @@
 		 * Construct the hidden created time details so that when a form is submitted
 		 * the created time data is saved also.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the essential elements
 		 * @return Widget
 		 *	the html representation of the essential elements.
 		 */
-		protected function created($importer) {
+		protected function created() {
 			$group = new XMLElement('p');
-			$group->appendChild(Widget::Input('fields[about][created]', $importer['about']['created'], 'hidden'));
+			$group->appendChild(Widget::Input('fields[about][created]', $this->importer['about']['created'], 'hidden'));
 			return $group;
 		}
 
 		/**
 		 * Construct the html representation of the source elements of the importer.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the essential elements
 		 * @param array $errors (optional)
 		 *	an optional error array as constructed by validating the _POST data.
 		 * @return Widget
 		 *	the html representation of the essential elements.
 		 */
-		protected function source($importer, $errors=null) {
+		protected function source($errors=null) {
 			$fieldset = new XMLElement('fieldset');
 			$fieldset->setAttribute('class', 'settings');
 			$fieldset->appendChild(new XMLElement('legend', __('Source')));
 
-			$fieldset->appendChild($this->filename($importer, $errors));
+			$fieldset->appendChild($this->filename($errors));
 			// only add the help and setter for header information if there is no file already set
-			if (!isset($importer['source']['name'])) {
+			if (!isset($this->importer['source']['name'])) {
 				$fieldset->appendChild($this->filenameHelp());
 			}
-			$fieldset->appendChild($this->filenameHeader($importer));
+			$fieldset->appendChild($this->filenameHeader($this->importer));
 			// only add the example if a file has been uploaded
-			if (isset($importer['source']['name'])) {
-				$fieldset->appendChild($this->filenameExamples($importer));
+			if (isset($this->importer['source']['name'])) {
+				$fieldset->appendChild($this->filenameExamples());
 			}
 			return $fieldset;
 		}
@@ -300,19 +302,17 @@
 		 * Construct the html representation of the source element of the
 		 * importer.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the essential elements
 		 * @param array $errors (optional)
 		 *	an optional error array as constructed by validating the _POST data.
 		 * @return Widget
 		 *	the html representation of the essential elements.
 		 */
-		protected function filename($importer, $errors=null) {
+		protected function filename($errors=null) {
 			$label = Widget::Label(__('File'));
-			if (isset($importer['source']['name'])) {
-				$label->setValue(__('File: ' .  $importer['source']['name']));
-				$label->appendChild(Widget::Input('fields[source][name]', $importer['source']['name'], 'hidden'));
-				$label->appendChild(Widget::Input('fields[source][tmp_name]', $importer['source']['path'], 'hidden'));
+			if (isset($this->importer['source']['name'])) {
+				$label->setValue(__('File: ' .  $this->importer['source']['name']));
+				$label->appendChild(Widget::Input('fields[source][name]', $this->importer['source']['name'], 'hidden'));
+				$label->appendChild(Widget::Input('fields[source][tmp_name]', $this->importer['source']['path'], 'hidden'));
 			} else {
 				$label->appendChild(Widget::Input('fields[source]', null, 'file'));
 			}
@@ -327,15 +327,13 @@
 		 * Construct the html to query the user as to whether the input file contains
 		 * column headers.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the essential elements
 		 * @return Widget
 		 *	the html widget to query the user for the header status of the file.
 		 */
-		protected function filenameHeader($importer) {
+		protected function filenameHeader() {
 			$label = Widget::Label(__('This file contains an initial line of header information'));
 			$input = Widget::Input('fields[header]', 'true', 'checkbox');
-			if ($importer['source']['header'] == true) {
+			if ($this->importer['source']['header'] == true) {
 				$input->setAttribute('checked', 'checked');
 			};
 			$input->setAttribute('id', 'csv-header-toggle');
@@ -346,12 +344,10 @@
 		/**
 		 * Construct the alternative parsing examples.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the essential elements
 		 * @return Widget
 		 *	the html list of the html formatted examples.
 		 */
-		protected function filenameExamples($importer) {
+		protected function filenameExamples() {
 			$examples = new XMLElement('ol');
 			$examples->setAttribute('class', 'csv-example-list');
 			// generate an example for both with and without the header set
@@ -359,7 +355,7 @@
 				$example = new XMLElement('li');
 				$example->setAttribute('class', "csv-example-" . ($header ? 'true' : 'false'));
 				$label = Widget::Label(__($header ? 'With Header' : 'Without Header'));
-				$label->appendChild($this->filenameExample($importer, $header));
+				$label->appendChild($this->filenameExample($header));
 				$example->appendChild($label);
 				$examples->appendChild($example);
 			}
@@ -371,15 +367,13 @@
 		 * from the input file. This will allow the user to map the columns more successfully
 		 * to fields since they can see what each solumn corresponds to.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the filename example
 		 * @param boolean header
 		 *	if true the example is generated as though the file has a header, if false it
 		 *	autogenerates column headers. defaults to false.
 		 * @return Widget
 		 *	the constructed example.
 		 */
-		protected function filenameExample($importer, $header) {
+		protected function filenameExample($header) {
 			$data = array();
 			if (($handle = fopen($importer['source']['path'], "r")) !== false) {
 				// if the user has stated that there is a header, throw away the first line
@@ -417,18 +411,16 @@
 		/**
 		 * Construct the footer of the page.
 		 *
-		 * @param array $importer
-		 *	the importer from which to test for the form stage
 		 * @param boolean $deletable
 		 *	true if this entry is deletable, false otherwise.
 		 * @return Widget
 		 *	the footer html widget.
 		 */
-		protected function footer($importer, $deletable) {
+		protected function footer($deletable) {
 			$footer = new XMLElement('div');
 			$footer->setAttribute('class', 'actions');
-			$footer->appendChild($this->save($importer));
-			$footer->appendChild($this->run($importer));
+			$footer->appendChild($this->save());
+			$footer->appendChild($this->run());
 			if ($deletable) {
 				$footer->appendChild($this->delete());
 			}
@@ -441,14 +433,12 @@
 		 * the user upload the file, then it requests the user select a section
 		 * and finally it requests the user save the importer.
 		 *
-		 * @param array $importer
-		 *	the importer from which to establish the form stage.
 		 * @return Widget
 		 *	the save button html widget.
 		 */
-		protected function save($importer) {
+		protected function save() {
 			// if there is already a file uploaded use save importer instead
-			if (isset($importer['source']['name'])) {
+			if (isset($this->importer['source']['name'])) {
 				return Widget::Input('action[save]', __('Save Importer'), 'submit', array('accesskey' => 's'));
 			}
 			return Widget::Input('action[upload]', __('Upload File'), 'submit', array('accesskey' => 's'));
@@ -457,8 +447,6 @@
 		/**
 		 * Construct the run button.
 		 *
-		 * @param array $importer
-		 *	the importer from which to estable the form stage.
 		 * @return Widget
 		 *	the save button html widget.
 		 */
@@ -467,7 +455,7 @@
 			$button->setAttribute('accesskey', 'r');
 			$button->setAttribute('class', 'run');
 			// the button is only enabled after the user has uploaded a file
-			if (isset($importer['source']['name'])) {
+			if (isset($this->importer['source']['name'])) {
 				$button->setAttribute('disabled', 'disabled');
 			}
 			return $button;
@@ -492,33 +480,29 @@
 		/**
 		 * Construct the destination component of the form.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the destination
 		 * @return Widget
 		 *	the section selection component.
 		 */
-		protected function destination($importer) {
+		protected function destination() {
 			$fieldset = new XMLElement('fieldset');
 			$fieldset->setAttribute('class', 'settings');
 			$fieldset->appendChild(new XMLElement('legend', __('Destination')));
 			
-			$fieldset->appendChild($this->section($importer));
+			$fieldset->appendChild($this->section($this->importer));
 			return $fieldset;
 		}
 
 		/**
 		 * Construct the section selection component of the form.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the section
 		 * @return Widget
 		 *	the section selection component.
 		 */
-		protected function section($importer) {
+		protected function section() {
 			$sectionManager = new SectionManager($this->_Parent);
 			$options = array();
 			foreach ($sectionManager->fetch(NULL, 'ASC', 'name') as $section) {
-				$options[] = array($section->get('id'), $importer['section']['id'] == $section->get('id'), $section->get('name'));
+				$options[] = array($section->get('id'), $this->importer['section']['id'] == $section->get('id'), $section->get('name'));
 			}
 			$label = Widget::Label(__('Section'));
 			$select = Widget::Select('fields[section]', $options);
@@ -530,12 +514,10 @@
 		/**
 		 * Construct the mappings section of the form.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the mappings
 		 * @return Widget
 		 *	the mappings component.
 		 */
-		protected function mappings($importer) {
+		protected function mappings() {
 			$fieldset = new XMLElement('fieldset');
 			$fieldset->setAttribute('class', 'settings');
 			$fieldset->appendChild(new XMLElement('legend', __('Mappings')));
@@ -546,7 +528,7 @@
 			foreach (array(true, false) as $heading) {
 				$item = new XMLElement('li');
 				$item->setAttribute('class', "csv-heading-" . ($heading ? 'true' : 'false'));
-				$item->appendChild($this->sectionsMapping($importer, $heading));
+				$item->appendChild($this->sectionsMapping($heading));
 				$headings->appendChild($item);
 			}
 			$fieldset->appendChild($headings);
@@ -556,15 +538,13 @@
 		/**
 		 * Construct the widget for a given heading selection.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the sections mapping.
 		 * @param boolean header
 		 *	true if the first line of the file defines the set of columns, false
 		 *	otherwise.
 		 * @return Widget
 		 *	the mapping component.
 		 */
-		protected function sectionsMapping($importer, $header) {
+		protected function sectionsMapping($header) {
 			// because we are dynamically selecting the field drop down based on the selected
 			// section, we must provide the mappings for each possible section, not any selected one.
 			// the javascript will then show/hide the correct set of fields based on this.
@@ -574,7 +554,7 @@
 			foreach ($sectionManager->fetch(NULL, 'ASC', 'name') as $section) {
 				$item = new XMLElement('li');
 				$item->setAttribute('class', "csv-section-{$section->get('id')}");
-				$item->appendChild($this->sectionMapping($importer, $header, $section->get('id')));
+				$item->appendChild($this->sectionMapping($header, $section->get('id')));
 				$sections->appendChild($item);
 			}
 			return $sections;
@@ -583,8 +563,6 @@
 		/**
 		 * Construct the widget for a given section mapping.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the section mapping.
 		 * @param boolean header
 		 *	true if the mapping should be constructed as though the first line of the 
 		 *	file defines its heading, false otherwise.
@@ -594,17 +572,17 @@
 		 * @return Widget
 		 *	the mapping component.
 		 */
-		protected function sectionMapping($importer, $header, $section) {
+		protected function sectionMapping($header, $section) {
 			// because we are generating the set of mappings dynamically, we store the
 			// list of these as an ordered list. each entry is indexed by its position
 			// in the ordered list and the "template" empty entry is at index -1.
 			$list = new XMLElement('ol');
 			$list->setAttribute('class', 'csv-mapping-duplicator');
-			if (isset($importer['mappings']) and is_array($importer['mappings'])) {
-				foreach ($importer['mappings'] as $index => $value) {
+			if (isset($this->importer['mappings']) and is_array($this->importer['mappings'])) {
+				foreach ($this->importer['mappings'] as $index => $value) {
 					$item = new XMLElement('li');
 					$item->appendChild(new XMLElement('h4', __('Mapping')));
-					$item->appendChild($this->mapping($importer, $header, $section, $index));
+					$item->appendChild($this->mapping($header, $section, $index));
 					$list->appendChild($item);
 				}
 			}
@@ -613,7 +591,7 @@
 			$item->setAttribute('class', 'template');
 			$item->appendChild(new XMLElement('h4', __('Mapping')));
 			$item->appendChild(Widget::Input('fields[mapping][-1][field]', null, 'hidden'));
-			$item->appendChild($this->mapping($importer, $header, $section, -1));
+			$item->appendChild($this->mapping($header, $section, -1));
 			$list->appendChild($item);
 			return $list;
 		}
@@ -623,8 +601,6 @@
 		 * select a column from the uploaded file and match it to one of the
 		 * unmapped fields of the selected section.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the essential elements
 		 * @param boolean header
 		 *	true if the first line of the file is the source of the headers, false
 		 *	otherwise.
@@ -639,29 +615,27 @@
 		 * @return Widget
 		 *	the section selection component.
 		 */
-		protected function mapping($importer, $header, $section, $index=0) {
+		protected function mapping($header, $section, $index=0) {
 			$group = new XMLElement('div');
 			$group->setAttribute('class', 'group');
-			$group->appendChild($this->columns($importer, $header, $index));
-			$group->appendChild($this->fields($importer, $section, $index));
+			$group->appendChild($this->columns($header, $index));
+			$group->appendChild($this->fields($section, $index));
 			return $group;
 		}
 
 		/**
 		 * Construct a selector for the columns in the csv file.
 		 *
-		 * @param array $importer
-		 *	the importer from which to construct the essential elements
 		 * @param integer $index
 		 *	the index of this column field instance.
 		 * @return Widget
 		 *	the section selection component.
 		 */
-		protected function columns($importer, $header, $index) {
+		protected function columns($header, $index) {
 			$label = Widget::Label('Column');
 			$options = array();
-			foreach ($this->headers($importer, $header) as $i => $column) {
-				$options[] = array($i, $i == $importer['mappings'][$index]['column'], $column);
+			foreach ($this->headers[$header] as $i => $column) {
+				$options[] = array($i, $i == $this->importer['mappings'][$index]['column'], $column);
 			}
 			$label->appendChild(Widget::Select("fields[mapping][{$index}][column]", $options));
 			return $label;
@@ -670,8 +644,6 @@
 		/**
 		 * Extract the column headings from the csv file.
 		 *
-		 * @param array $importer
-		 *	the importer from which to extract the source file information
 		 * @param boolean existing
 		 *	true if the first line should be used as the header values, false if
 		 *	column names should be autogenerated. this is independent of the current
@@ -680,9 +652,12 @@
 		 *	the array of column headings. if there is a problem reading the file or
 		 *	parsing its contents, the result will be an empty array.
 		 */
-		protected function headers($importer, $header) {
+		protected function headers($header) {
 			$data = array();
-			if (($handle = fopen($importer['source']['path'], "r")) !== false) {
+			if (!isset($this->importer['source']['path'])) {
+				return $data;
+			}
+			if (($handle = fopen($this->importer['source']['path'], "r")) !== false) {
 				$data = fgetcsv($handle, 1000, ",");
 				// make sure to close the file.
 				fclose($handle);
@@ -698,8 +673,6 @@
 		/**
 		 * Construct a selector for the fields in the selected section.
 		 *
-		 * @param array $importer
-		 *	the importer from which to extract the selected field information
 		 * @param integer section
 		 *	the id of the section to construct the field selector for.
 		 * @param integer index
@@ -707,15 +680,15 @@
 		 * @return Widget
 		 *	the field selection component.
 		 */
-		protected function fields($importer, $section, $index) {
+		protected function fields($section, $index) {
 			$label = Widget::Label('Field');
 			$options = array();
 			$sectionManager = new SectionManager($this->_Parent);
 			foreach ($sectionManager->fetch($section)->fetchFields() as $field) {
 				$selected = false;
-				if (isset($importer['mappings'])) {
-					if (isset($importer['mappings'][$index])) {
-						$selected = $field->get('id') == $importer['mappings'][$index]['field'];
+				if (isset($this->importer['mappings'])) {
+					if (isset($this->importer['mappings'][$index])) {
+						$selected = $field->get('id') == $this->importer['mappings'][$index]['field'];
 					}
 				}
 				$options[] = array($field->get('id'), $selected, $field->get('label'));
