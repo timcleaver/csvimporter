@@ -11,7 +11,12 @@
 		/**
 		 * The number of lines to display in an example.
 		 */
-		const EXAMPLE_LENGTH = 3;
+		const EXAMPLE_ROWS = 3;
+
+		/**
+		 * The number of example columns to display in an example.
+		 */
+		const EXAMPLE_COLUMNS = 5;
 
 		/**
 		 * The importer on which the editor is operating.
@@ -375,20 +380,34 @@
 		 */
 		protected function filenameExample($header) {
 			$data = array();
-			if (($handle = fopen($importer['source']['path'], "r")) !== false) {
+			if (($handle = fopen($this->importer['source']['path'], "r")) !== false) {
 				// if the user has stated that there is a header, throw away the first line
 				if ($header) {
 					fgets($handle);
 				}
 				// grab up to the first/next 3 lines of the file (if there are fewer than
 				// three then it grabs what is there)
-				for ($count = 0; (($row = fgetcsv($handle, 1000, ",")) !== false and $count < self::EXAMPLE_LENGTH); $count++) {
+				for ($count = 0; (($row = fgetcsv($handle, 1000, ",")) !== false and $count < self::EXAMPLE_ROWS); $count++) {
+					// if the row is longer that the example then truncate it and append elipses
+					if (count($row) > self::EXAMPLE_COLUMNS) {
+						$row = array_slice($row, 0, self::EXAMPLE_COLUMNS);
+						$row[] = '&#x2026;';
+					}
 					$data[] = Widget::TableRow(array_map(array('Widget', 'TableData'), $row));
+				}
+				// add a row of elipses if we truncated the example
+				if ($count >= self::EXAMPLE_ROWS) {
+					$data[] = Widget::TableRow(array_map(array('Widget', 'TableData'), array_fill(0, min(count($row), self::EXAMPLE_COLUMNS), '&#x22ee;')));
 				}
 				// make sure to close the file.
 				fclose($handle);
 			}
-			$headers = array_map(create_function('$header', 'return array($header, "", "");'), $this->headers($importer, $header));
+			$headers = $this->headers[$header];
+			if (count($headers) > self::EXAMPLE_COLUMNS) {
+				$headers = array_slice($headers, 0, self::EXAMPLE_COLUMNS);
+				$headers[] = '&#x2026;';
+			}
+			$headers = array_map(create_function('$header', 'return array($header, "", "");'), $headers);
 			return Widget::Table(Widget::TableHead($headers), null, Widget::TableBody($data));
 		}
 
